@@ -49,4 +49,32 @@ This is the expected and secure behavior for productivity vaults that require a 
 ### Branch
 
 - Branch: `test/create-vault-zero-amount`
-- Commit: test: create_vault with zero amount
+- Commits:
+  - `test: create_vault with zero amount`
+  - `ci: add GitHub Actions workflow and fix linting issues`
+
+### CI/CD Pipeline
+
+**GitHub Actions workflow created** (`.github/workflows/ci.yml`):
+- Triggers on push/PR to main/master branches
+- Runs on ubuntu-latest
+- Steps:
+  1. Checkout code
+  2. Install Rust stable toolchain
+  3. Build with `cargo build --verbose`
+  4. Run tests with `cargo test --verbose`
+  5. Check formatting with `cargo fmt -- --check`
+  6. Run linter with `cargo clippy -- -D warnings`
+
+**All CI checks pass locally**:
+```
+✓ Build passed
+✓ Tests passed
+✓ Formatting passed
+✓ Clippy passed
+```
+
+**Code quality fixes applied**:
+- Added `#![allow(clippy::too_many_arguments)]` to handle Soroban contract design pattern
+- Applied `cargo fmt` for consistent code formatting
+- All clippy warnings resolved
