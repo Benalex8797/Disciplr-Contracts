@@ -44,6 +44,9 @@ impl DisciplrVault {
         failure_destination: Address,
     ) -> u32 {
         creator.require_auth();
+        if amount <= 0 {
+            panic!("amount must be positive");
+        }
         // TODO: pull USDC from creator to this contract
         // For now, just store vault metadata (storage key pattern would be used in full impl)
         let vault = ProductivityVault {
@@ -98,5 +101,37 @@ impl DisciplrVault {
     /// Placeholder: returns None; full impl would read from storage.
     pub fn get_vault_state(_env: Env, _vault_id: u32) -> Option<ProductivityVault> {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::{testutils::Address as _, Env};
+
+    #[test]
+    #[should_panic(expected = "amount must be positive")]
+    fn test_create_vault_zero_amount() {
+        let env = Env::default();
+        let contract_id = env.register(DisciplrVault, ());
+        let client = DisciplrVaultClient::new(&env, &contract_id);
+
+        let creator = Address::generate(&env);
+        let success_dest = Address::generate(&env);
+        let failure_dest = Address::generate(&env);
+        let milestone_hash = BytesN::from_array(&env, &[0u8; 32]);
+
+        env.mock_all_auths();
+
+        client.create_vault(
+            &creator,
+            &0,
+            &1000,
+            &2000,
+            &milestone_hash,
+            &None,
+            &success_dest,
+            &failure_dest,
+        );
     }
 }
