@@ -67,26 +67,16 @@ impl DisciplrVault {
     ) -> u32 {
         creator.require_auth();
 
-<<<<<<< HEAD
+        // Validate that start_timestamp is strictly before end_timestamp.
+        // A vault with start >= end has no valid time window and must be rejected.
         if end_timestamp <= start_timestamp {
-            panic!("end_timestamp must be greater than start_timestamp");
+            panic!("create_vault: start_timestamp must be strictly less than end_timestamp");
         }
 
         let mut vault_count: u32 = env.storage().instance().get(&DataKey::VaultCount).unwrap_or(0);
         let vault_id = vault_count;
         vault_count += 1;
         env.storage().instance().set(&DataKey::VaultCount, &vault_count);
-
-=======
-        // Validate that start_timestamp is strictly before end_timestamp.
-        // A vault with start >= end has no valid time window and must be rejected.
-        if start_timestamp >= end_timestamp {
-            panic!("create_vault: start_timestamp must be strictly less than end_timestamp");
-        }
-
-        // TODO: pull USDC from creator to this contract
-        // For now, just store vault metadata (storage key pattern would be used in full impl)
->>>>>>> 391366d (feat: add timestamp validation guard to create_vault)
         let vault = ProductivityVault {
             creator,
             amount,
@@ -212,7 +202,6 @@ impl DisciplrVault {
     }
 }
 
-<<<<<<< HEAD
 #[cfg(test)]
 mod test {
     use super::*;
