@@ -50,6 +50,10 @@ pub struct DisciplrVault;
 #[contractimpl]
 impl DisciplrVault {
     /// Create a new productivity vault. Caller must have approved USDC transfer to this contract.
+    ///
+    /// # Validation Rules
+    /// - Requires `start_timestamp < end_timestamp`. If `start_timestamp >= end_timestamp`, the function panics
+    ///   because a 0-length or reverse-time window is invalid.
     pub fn create_vault(
         env: Env,
         creator: Address,
@@ -63,15 +67,16 @@ impl DisciplrVault {
     ) -> u32 {
         creator.require_auth();
 
+        // Validate that start_timestamp is strictly before end_timestamp.
+        // A vault with start >= end has no valid time window and must be rejected.
         if end_timestamp <= start_timestamp {
-            panic!("end_timestamp must be greater than start_timestamp");
+            panic!("create_vault: start_timestamp must be strictly less than end_timestamp");
         }
 
         let mut vault_count: u32 = env.storage().instance().get(&DataKey::VaultCount).unwrap_or(0);
         let vault_id = vault_count;
         vault_count += 1;
         env.storage().instance().set(&DataKey::VaultCount, &vault_count);
-
         let vault = ProductivityVault {
             creator,
             amount,
@@ -397,11 +402,116 @@ mod tests {
         env.mock_all_auths();
 
         let contract_id = env.register(DisciplrVault, ());
-        let client      = DisciplrVaultClient::new(&env, &contract_id);
+        let client = DisciplrVaultClient::new(&env, &contract_id);
 
         let (creator, amount, start, _, hash, verifier, s_dest, f_dest) = make_vault_args(&env);
 
         // end == start — should panic once validation is added
         client.create_vault(&creator, &amount, &start, &start, &hash, &verifier, &s_dest, &f_dest);
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers (from branch test/create-vault-invalid-timestamps)
+    // -----------------------------------------------------------------------
+
+    /// Fixture addresses used across tests.
+    struct Actors {
+        creator: Address,
+        success_dest: Address,
+        failure_dest: Address,
+    }
+
+    /// Build a fresh Soroban test environment, register the contract, and return
+    /// the typed client together with pre-generated mock actor addresses.
+    fn setup() -> (Env, DisciplrVaultClient<'static>, Actors) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(DisciplrVault, ());
+        let client = DisciplrVaultClient::new(&env, &contract_id);
+
+        let actors = Actors {
+            creator: Address::generate(&env),
+            success_dest: Address::generate(&env),
+            failure_dest: Address::generate(&env),
+        };
+
+        (env, client, actors)
+    }
+
+    /// Return a deterministic 32-byte milestone hash for testing.
+    fn milestone_hash(env: &Env) -> BytesN<32> {
+        BytesN::from_array(env, &[0xabu8; 32])
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    #[should_panic(expected = "create_vault: start_timestamp must be strictly less than end_timestamp")]
+    fn create_vault_rejects_start_equal_end() {
+        let (env, client, actors) = setup();
+
+        let amount = 100_000_000;
+        let start_timestamp = 1000;
+        let end_timestamp = 1000; // start == end
+        let milestone_hash = milestone_hash(&env);
+
+        client.create_vault(
+            &actors.creator,
+            &amount,
+            &start_timestamp,
+            &end_timestamp,
+            &milestone_hash,
+            &None,
+            &actors.success_dest,
+            &actors.failure_dest,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "create_vault: start_timestamp must be strictly less than end_timestamp")]
+    fn create_vault_rejects_start_greater_than_end() {
+        let (env, client, actors) = setup();
+
+        let amount = 100_000_000;
+        let start_timestamp = 2000;
+        let end_timestamp = 1000; // start > end
+        let milestone_hash = milestone_hash(&env);
+
+        client.create_vault(
+            &actors.creator,
+            &amount,
+            &start_timestamp,
+            &end_timestamp,
+            &milestone_hash,
+            &None,
+            &actors.success_dest,
+            &actors.failure_dest,
+        );
+    }
+
+    #[test]
+    fn create_vault_valid_timestamps() {
+        let (env, client, actors) = setup();
+
+        let amount = 100_000_000;
+        let start_timestamp = 1000;
+        let end_timestamp = 2000; // valid
+        let milestone_hash = milestone_hash(&env);
+
+        let vault_id = client.create_vault(
+            &actors.creator,
+            &amount,
+            &start_timestamp,
+            &end_timestamp,
+            &milestone_hash,
+            &None,
+            &actors.success_dest,
+            &actors.failure_dest,
+        );
+
+        assert_eq!(vault_id, 0);
     }
 }
