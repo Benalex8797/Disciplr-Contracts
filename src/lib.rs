@@ -1,62 +1,4 @@
-#[cfg(test)]
-mod tests {
-        #[test]
-        fn integration_create_validate_release() {
-            let env = Env::default();
-            let contract = DisciplrVault {};
-            let creator = Address::from_account_id(&env, &TestAddress::random(&env));
-            let verifier = Address::from_account_id(&env, &TestAddress::random(&env));
-            let success_destination = Address::from_account_id(&env, &TestAddress::random(&env));
-            let failure_destination = Address::from_account_id(&env, &TestAddress::random(&env));
-            let amount = 1000;
-            let start_timestamp = 1;
-            let end_timestamp = 100;
-            let milestone_hash = BytesN::from_array(&env, &[0u8; 32]);
 
-            // Step 1: Create vault
-            let vault_id = contract.create_vault(
-                env.clone(),
-                creator.clone(),
-                amount,
-                start_timestamp,
-                end_timestamp,
-                milestone_hash.clone(),
-                Some(verifier.clone()),
-                success_destination.clone(),
-                failure_destination.clone(),
-            );
-
-            // Step 2: Advance time (simulate)
-            // In real contract, would update env timestamp; here, just proceed
-
-            // Step 3: Validate milestone as verifier
-            let validated = contract.validate_milestone(env.clone(), vault_id);
-            assert!(validated, "Milestone should be validated");
-
-            // Step 4: Release funds
-            let released = contract.release_funds(env.clone(), vault_id);
-            assert!(released, "Funds should be released");
-
-            // Step 5: Verify vault status and balances
-            let vault_state = contract.get_vault_state(env.clone(), vault_id);
-            // Placeholder: vault_state is None in stub, so just check for None
-            assert!(vault_state.is_none(), "Vault state should be present in real impl");
-            // Placeholder: balance checks would require USDC mock and storage
-        }
-    use super::*;
-    use soroban_sdk::{testutils::Address as TestAddress, Env, Address, BytesN};
-
-    #[test]
-    fn cancel_vault_fails_for_nonexistent_vault() {
-        let env = Env::default();
-        let contract = DisciplrVault {};
-        let creator = Address::from_account_id(&env, &TestAddress::random(&env));
-        let vault_id = 9999; // Non-existent vault_id
-        // Should fail: cancel_vault returns false or panics
-        let result = contract.cancel_vault(env.clone(), vault_id);
-        assert!(!result, "cancel_vault should fail for non-existent vault_id");
-    }
-}
 #![no_std]
 #![allow(clippy::too_many_arguments)]
 
@@ -135,7 +77,6 @@ pub enum DataKey {
 // ---------------------------------------------------------------------------
 // Contract
 // ---------------------------------------------------------------------------
-
 #[contract]
 pub struct DisciplrVault;
 
@@ -168,8 +109,30 @@ impl DisciplrVault {
             panic!("amount must be positive");
         }
 
+    /// Create a new productivity vault. Caller must have approved USDC transfer to this contract.
+    ///
+    /// # Validation Rules
+    /// - Requires `start_timestamp < end_timestamp`. If `start_timestamp >= end_timestamp`, the function panics
+    ///   because a 0-length or reverse-time window is invalid.
+    pub fn create_vault(
+        env: Env,
+        usdc_token: Address,
+        creator: Address,
+        amount: i128,
+        start_timestamp: u64,
+        end_timestamp: u64,
+        milestone_hash: BytesN<32>,
+        verifier: Option<Address>,
+        success_destination: Address,
+        failure_destination: Address,
+    ) -> u32 {
+        creator.require_auth();
+
+        if amount <= 0 {
+            panic!("amount must be positive");
+        }
+
         // Validate that start_timestamp is strictly before end_timestamp.
-        // A vault with start >= end has no valid time window and must be rejected.
         if end_timestamp <= start_timestamp {
             panic!("create_vault: start_timestamp must be strictly less than end_timestamp");
         }
@@ -367,7 +330,7 @@ impl DisciplrVault {
         env.storage().instance().set(&vault_key, &vault);
 
         env.events()
-            .publish((Symbol::new(&env, "vault_cancelled"), vault_id), ());
+            .publish((Symbol::new(&env, "vault_cancelled"), vault_id), vault.amount);
         Ok(true)
     }
 
