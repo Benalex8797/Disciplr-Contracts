@@ -53,6 +53,20 @@ pub struct ProductivityVault {
     pub status: VaultStatus,
 }
 
+/// Parameters for creating a new `ProductivityVault`.
+#[contracttype]
+#[derive(Clone)]
+pub struct CreateVaultArgs {
+    pub creator: Address,
+    pub amount: i128,
+    pub start_timestamp: u64,
+    pub end_timestamp: u64,
+    pub milestone_hash: BytesN<32>,
+    pub verifier: Option<Address>,
+    pub success_destination: Address,
+    pub failure_destination: Address,
+}
+
 // ── Errors ────────────────────────────────────────────────────────────────────
 
 #[contracterror]
@@ -117,17 +131,18 @@ impl DisciplrVault {
     /// is stubbed out; a production version would call the token contract here.
     ///
     /// Returns the newly assigned `vault_id`.
-    pub fn create_vault(
-        env: Env,
-        creator: Address,
-        amount: i128,
-        start_timestamp: u64,
-        end_timestamp: u64,
-        milestone_hash: BytesN<32>,
-        verifier: Option<Address>,
-        success_destination: Address,
-        failure_destination: Address,
-    ) -> u32 {
+    pub fn create_vault(env: Env, args: CreateVaultArgs) -> u32 {
+        let CreateVaultArgs {
+            creator,
+            amount,
+            start_timestamp,
+            end_timestamp,
+            milestone_hash,
+            verifier,
+            success_destination,
+            failure_destination,
+        } = args;
+
         creator.require_auth();
 
         // Allocate a monotonically increasing vault id.
@@ -296,3 +311,4 @@ impl DisciplrVault {
         env.storage().persistent().get(&DataKey::Vault(vault_id))
     }
 }
+
