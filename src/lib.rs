@@ -124,6 +124,7 @@ impl DisciplrVault {
         env.events()
             .publish((Symbol::new(&env, "milestone_validated"), vault_id), ());
         true
+    }
     pub fn validate_milestone(env: Env, vault_id: u32) -> Result<bool, Error> {
         let vault_key = DataKey::Vault(vault_id);
         let mut vault: ProductivityVault = env
@@ -199,34 +200,6 @@ impl DisciplrVault {
         Ok(true)
     }
 
-    /// Cancel vault and return funds to creator (if allowed by rules).
-    /// Only Active vaults can be cancelled.
-    pub fn cancel_vault(env: Env, vault_id: u32, creator: Address) -> bool {
-        creator.require_auth();
-        
-        // Get vault state
-        let vault_opt = Self::get_vault_state(env.clone(), vault_id);
-        
-        if let Some(vault) = vault_opt {
-            // Verify caller is the creator
-            if vault.creator != creator {
-                panic!("Only vault creator can cancel");
-            }
-            
-            // Only Active vaults can be cancelled
-            if vault.status != VaultStatus::Active {
-                panic!("Only Active vaults can be cancelled");
-            }
-            
-            // TODO: return USDC to creator, set status to Cancelled
-            env.events().publish(
-                (Symbol::new(&env, "vault_cancelled"), vault_id),
-                (),
-            );
-            true
-        } else {
-            panic!("Vault not found");
-        }
     /// Cancel vault and return funds to creator.
     pub fn cancel_vault(env: Env, vault_id: u32) -> Result<bool, Error> {
         let vault_key = DataKey::Vault(vault_id);
@@ -250,7 +223,7 @@ impl DisciplrVault {
     /// Return current vault state for a given vault id.
     pub fn get_vault_state(env: Env, vault_id: u32) -> Option<ProductivityVault> {
         //This line returns None if the vault doesn't exist.
-        env.storage().instance().get(&vault_id)
+        env.storage().persistent().get(&DataKey::Vault(vault_id))
     }
 }
 
