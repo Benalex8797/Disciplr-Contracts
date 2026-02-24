@@ -655,7 +655,7 @@ mod tests {
 mod test {
     use super::*;
     use soroban_sdk::{
-        contract, contractimpl, contracttype, token, MuxedAddress, String, Symbol,
+        contract, contractimpl, contracttype, token, String, Symbol,
     };
     use soroban_sdk::testutils::Address as _;
 
@@ -693,15 +693,14 @@ mod test {
                 .unwrap_or(0)
         }
 
-        pub fn transfer(env: Env, from: Address, to: MuxedAddress, amount: i128) {
+        pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {
             from.require_auth();
-            let to_addr = to.address();
             let from_balance: i128 =
-                env.storage().instance().get(&MockTokenKey::Balance(from)).unwrap_or(0);
+                env.storage().instance().get(&MockTokenKey::Balance(from.clone())).unwrap_or(0);
             let to_balance: i128 =
-                env.storage().instance().get(&MockTokenKey::Balance(to_addr.clone())).unwrap_or(0);
+                env.storage().instance().get(&MockTokenKey::Balance(to.clone())).unwrap_or(0);
             env.storage().instance().set(&MockTokenKey::Balance(from), &(from_balance - amount));
-            env.storage().instance().set(&MockTokenKey::Balance(to_addr), &(to_balance + amount));
+            env.storage().instance().set(&MockTokenKey::Balance(to), &(to_balance + amount));
         }
 
         pub fn transfer_from(
