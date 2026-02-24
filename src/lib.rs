@@ -55,7 +55,6 @@ impl DisciplrVault {
         creator.require_auth();
         let contract = env.current_contract_address();
         token::Client::new(&env, &token).transfer_from(
-            &env,
             &contract,
             &creator,
             &contract,
@@ -127,7 +126,7 @@ impl DisciplrVault {
         let creator = vault.creator.clone();
         let token = vault.token.clone();
         let token_client = token::Client::new(&env, &token);
-        token_client.transfer(&env, &contract, &creator, &amount);
+        token_client.transfer(&contract, &creator, &amount);
         vault.status = VaultStatus::Cancelled;
         env.storage().instance().set(&DataKey::Vault(vault_id), &vault);
         env.events().publish(
