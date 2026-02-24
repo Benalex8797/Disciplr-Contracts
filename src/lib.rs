@@ -943,7 +943,9 @@ mod tests {
     fn test_create_vault_amount_above_max_rejected() {
         let setup = TestSetup::new();
         let client = setup.client();
-        let amount_above_max = MAX_AMOUNT.checked_add(1).expect("MAX_AMOUNT + 1 overflowed");
+        let amount_above_max = MAX_AMOUNT
+            .checked_add(1)
+            .expect("MAX_AMOUNT + 1 overflowed");
 
         client.create_vault(
             &setup.usdc_token,
