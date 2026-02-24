@@ -1230,7 +1230,7 @@ mod tests {
         let contract_id = env.register(DisciplrVault, ());
         let client = DisciplrVaultClient::new(&env, &contract_id);
         let usdc_token = Address::generate(&env);
-        
+
         // Try to release funds for non-existent vault (returns error, but doesn't crash)
         let result = client.try_release_funds(&0u32, &usdc_token);
         // Result could be error since vault doesn't exist, just verify it's a Result
@@ -1244,7 +1244,7 @@ mod tests {
         let contract_id = env.register(DisciplrVault, ());
         let client = DisciplrVaultClient::new(&env, &contract_id);
         let usdc_token = Address::generate(&env);
-        
+
         // Try to redirect funds for non-existent vault (returns error, but doesn't crash)
         let result = client.try_redirect_funds(&0u32, &usdc_token);
         // Result could be error since vault doesn't exist, just verify it's a Result
@@ -1258,7 +1258,7 @@ mod tests {
         let contract_id = env.register(DisciplrVault, ());
         let client = DisciplrVaultClient::new(&env, &contract_id);
         let usdc_token = Address::generate(&env);
-        
+
         // Try to cancel non-existent vault (returns error, but doesn't crash)
         let result = client.try_cancel_vault(&0u32, &usdc_token);
         // Result could be error since vault doesn't exist, just verify it's a Result
@@ -1371,7 +1371,7 @@ mod tests {
         let success_dest = Address::generate(&env);
         let failure_dest = Address::generate(&env);
 
-        let  data = [0u8; 32];
+        let data = [0u8; 32];
         let milestone_hash = BytesN::<32>::from_array(&env, &data);
 
         let _vault = ProductivityVault {
