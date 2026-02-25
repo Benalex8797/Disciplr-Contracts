@@ -243,8 +243,10 @@ impl DisciplrVault {
 
         vault.status = VaultStatus::Completed;
         env.storage().instance().set(&vault_key, &vault);
-        env.events()
-            .publish((Symbol::new(&env, "funds_released"), vault_id), vault.amount);
+        env.events().publish(
+            (Symbol::new(&env, "funds_released"), vault_id),
+            vault.amount,
+        );
         Ok(true)
     }
 
@@ -314,8 +316,10 @@ impl DisciplrVault {
 
         vault.status = VaultStatus::Cancelled;
         env.storage().instance().set(&vault_key, &vault);
-        env.events()
-            .publish((Symbol::new(&env, "vault_cancelled"), vault_id), vault.amount);
+        env.events().publish(
+            (Symbol::new(&env, "vault_cancelled"), vault_id),
+            vault.amount,
+        );
         Ok(true)
     }
 
@@ -371,10 +375,7 @@ mod tests {
             let usdc_admin = Address::generate(&env);
             let usdc_token = env.register_stellar_asset_contract_v2(usdc_admin.clone());
             let usdc_addr = usdc_token.address();
-            StellarAssetClient::new(&env, &usdc_addr).mint(
-                &Address::generate(&env),
-                &0i128,
-            );
+            StellarAssetClient::new(&env, &usdc_addr).mint(&Address::generate(&env), &0i128);
             let creator = Address::generate(&env);
             let verifier = Address::generate(&env);
             let success_dest = Address::generate(&env);
@@ -509,7 +510,11 @@ mod tests {
             &setup.failure_dest,
         );
         assert_eq!(
-            setup.client().get_vault_state(&vault_id).unwrap().milestone_hash,
+            setup
+                .client()
+                .get_vault_state(&vault_id)
+                .unwrap()
+                .milestone_hash,
             custom_hash
         );
     }
@@ -517,8 +522,7 @@ mod tests {
     #[test]
     fn test_create_vault_increments_id() {
         let setup = TestSetup::new();
-        StellarAssetClient::new(&setup.env, &setup.usdc_token)
-            .mint(&setup.creator, &setup.amount);
+        StellarAssetClient::new(&setup.env, &setup.usdc_token).mint(&setup.creator, &setup.amount);
         let id_a = setup.create_default_vault();
         let id_b = setup.create_default_vault();
         assert_ne!(id_a, id_b);
@@ -1030,7 +1034,10 @@ mod tests {
     #[test]
     fn test_release_funds_rejects_non_existent_vault() {
         let setup = TestSetup::new();
-        assert!(setup.client().try_release_funds(&999, &setup.usdc_token).is_err());
+        assert!(setup
+            .client()
+            .try_release_funds(&999, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
@@ -1041,7 +1048,9 @@ mod tests {
         let vault_id = setup.create_default_vault();
         setup.env.ledger().set_timestamp(setup.end_timestamp + 1);
         client.release_funds(&vault_id, &setup.usdc_token);
-        assert!(client.try_release_funds(&vault_id, &setup.usdc_token).is_err());
+        assert!(client
+            .try_release_funds(&vault_id, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
@@ -1051,7 +1060,9 @@ mod tests {
         setup.env.ledger().set_timestamp(setup.start_timestamp);
         let vault_id = setup.create_default_vault();
         client.cancel_vault(&vault_id, &setup.usdc_token);
-        assert!(client.try_release_funds(&vault_id, &setup.usdc_token).is_err());
+        assert!(client
+            .try_release_funds(&vault_id, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
@@ -1060,7 +1071,9 @@ mod tests {
         let client = setup.client();
         setup.env.ledger().set_timestamp(setup.start_timestamp);
         let vault_id = setup.create_default_vault();
-        assert!(client.try_release_funds(&vault_id, &setup.usdc_token).is_err());
+        assert!(client
+            .try_release_funds(&vault_id, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
@@ -1120,13 +1133,18 @@ mod tests {
         let client = setup.client();
         setup.env.ledger().set_timestamp(setup.start_timestamp);
         let vault_id = setup.create_default_vault();
-        assert!(client.try_redirect_funds(&vault_id, &setup.usdc_token).is_err());
+        assert!(client
+            .try_redirect_funds(&vault_id, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
     fn test_redirect_funds_rejects_non_existent_vault() {
         let setup = TestSetup::new();
-        assert!(setup.client().try_redirect_funds(&999, &setup.usdc_token).is_err());
+        assert!(setup
+            .client()
+            .try_redirect_funds(&999, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
@@ -1137,7 +1155,9 @@ mod tests {
         let vault_id = setup.create_default_vault();
         setup.env.ledger().set_timestamp(setup.end_timestamp + 1);
         client.redirect_funds(&vault_id, &setup.usdc_token);
-        assert!(client.try_redirect_funds(&vault_id, &setup.usdc_token).is_err());
+        assert!(client
+            .try_redirect_funds(&vault_id, &setup.usdc_token)
+            .is_err());
     }
 
     #[test]
