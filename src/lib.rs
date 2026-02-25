@@ -1,4 +1,4 @@
- #![no_std]
+#![no_std]
 #![allow(clippy::too_many_arguments)]
 
 use soroban_sdk::{
@@ -1529,4 +1529,3 @@ mod tests {
         let _bytes = BytesN::<32>::from_array(&env, &data);
     }
 }
-
